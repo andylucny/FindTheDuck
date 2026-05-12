@@ -1,3 +1,4 @@
+from agentspace import space
 from camera import Camera
 from perception import Perception
 from mirror_server import MirrorServerAgent

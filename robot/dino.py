@@ -25,7 +25,7 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 #net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
 #net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
-def dino(image):
+def dino(img):
     blob = cv2.dnn.blobFromImage(img, scalefactor=1/255.0, size=(224,224))
     net.setInput(blob)
     features = net.forward()[0]
