@@ -19,13 +19,10 @@ class Perception(Agent):
             if image is None:
                 print("[Perception] image is None")
                 return
-#print(f"[Perception] got image: type={type(image).__name__} "
-                #f"shape={getattr(image, 'shape', '?')}")
             features = dino(image)
             if features is None:
                 print("[Perception] dino() returned None")
                 return
-           # print(f"[Perception] features shape={features.shape}")
             space[self.feature_name] = features
         except Exception as e:
             import traceback

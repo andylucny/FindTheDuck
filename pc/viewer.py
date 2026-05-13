@@ -13,4 +13,3 @@ class Viewer(Agent):
     def senseSelectAct(self):
         cv2.imshow(self.name,space[self.name])
         cv2.waitKey(1)
-
