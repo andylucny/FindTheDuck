@@ -13,7 +13,7 @@ ip = '10.195.88.72'
 MirrorClientAgent(ip,7777,['duck'])
 time.sleep(1)
 DuckProvider("objects/duck/features_00.npy")
-#Viewer('img')
+Viewer('img')
 #Snapshotter('img', 'features')
 #CLI()
 
