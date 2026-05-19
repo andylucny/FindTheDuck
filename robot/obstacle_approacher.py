@@ -12,7 +12,7 @@ CONE_Y_HALF = 0.5
 CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0   # ignore floor + above-head
 
 # Movement
-ChannelFactoryInitialize(0, 'eth0')   # or whatever your interface is
+# ChannelFactoryInitialize(0, 'eth0')   # or whatever your interface is
 client = LocoClient()
 client.SetTimeout(10.0)
 client.Init()
@@ -27,9 +27,8 @@ class ObstacleApproacher(Agent):
     def init(self):
         self.max_distance = 1.0
         space.attach_trigger(self.name, self)
-        super().__init__()
 
-    def front_distance(pts):
+    def front_distance(self, pts):
         x, y, z = pts[:, 0], pts[:, 1], pts[:, 2]
         mask = (
             (x > CONE_X_MIN) & (x < CONE_X_MAX) &
@@ -41,7 +40,7 @@ class ObstacleApproacher(Agent):
             return float("inf")
         return float(np.linalg.norm(front[:, :2], axis=1).min())
     
-    def walk_forward(client, distance_m, speed=0.3):
+    def walk_forward(self, client, distance_m, speed=0.3):
         duration = distance_m / speed
         t_end = time.time() + duration
         while time.time() < t_end:
@@ -49,7 +48,7 @@ class ObstacleApproacher(Agent):
             time.sleep(0.05)
         client.StopMove()
 
-    def walk_forward_slowly(client, distance_m, speed=0.1):
+    def walk_forward_slowly(self, client, distance_m, speed=0.1):
         duration = distance_m / speed
         t_end = time.time() + duration
         while time.time() < t_end:
@@ -57,7 +56,7 @@ class ObstacleApproacher(Agent):
             time.sleep(0.05)
         client.StopMove()
 
-    def turn(client, angle_rad, rate=0.5):
+    def turn(self, client, angle_rad, rate=0.5):
         """Positive angle = counterclockwise (left turn)."""
         direction = 1 if angle_rad >= 0 else -1
         duration = abs(angle_rad) / rate
