@@ -81,6 +81,9 @@ class ObstacleApproacher(Agent):
             space['tospeak'] = "Slower. Obstacle coming nearer."
         else:
             self.mode = 'go'
+            client.Move(0.3, 0, 0)
+            time.sleep(3)
+            client.StopMove()
             #self.walk_forward(client, d)
             
         print(f"obstacle at {d:.2f} m => {self.mode}", flush=True)
