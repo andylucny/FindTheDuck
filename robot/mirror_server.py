@@ -27,23 +27,27 @@ class MirrorServiceAgent(Agent):
         
     def init(self):
         for name in self.names:
-            space.attach_trigger(name,self,Trigger.NAMES)
+            space.attach_trigger(name, self, Trigger.NAMES)
         print('starting mirroring')
-        self.loopit = True
-        
-    def loop(self):
-        try:
-            line = self.getline()
-        except:
-            print('reception closed')
-            self.stop()
-        try:
-            name, marshalled = line.split()
-            print(f"robot server: received name={name!r}, len={len(marshalled)}", flush=True)
-            space[name] = demarshal(name, marshalled)
-            print(f"robot server: wrote space[{name!r}], is_none={space[name] is None}", flush=True)
-        except:
-            pass
+        import threading
+        self.reader = threading.Thread(target=self.read_loop, daemon=True)
+        self.reader.start()
+
+    def read_loop(self):
+        while not self.stopped:
+            try:
+                line = self.getline()
+            except Exception as e:
+                print('reception closed:', e, flush=True)
+                self.stop()
+                return
+            try:
+                name, marshalled = line.split(None, 1)
+                print(f"robot server: received name={name!r}, len={len(marshalled)}", flush=True)
+                space[name] = demarshal(name, marshalled)
+                print(f"robot server: wrote space[{name!r}], is_none={space[name] is None}", flush=True)
+            except Exception as e:
+                print(f"robot server: parse/demarshal failed: {e}", flush=True)
 
     def senseSelectAct(self):
         name = self.triggered()
