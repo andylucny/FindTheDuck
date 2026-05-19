@@ -73,18 +73,15 @@ class ObstacleApproacher(Agent):
         d = self.front_distance(pts)
         if d < STOP_DISTANCE:
             self.mode = 'stop'
-            #self.turn(client, math.pi)
+            self.turn(client, math.pi)
             space['tospeak'] = "Stop. Obstacle found."
         elif d < SLOW_DISTANCE:
             self.mode = 'slow'
-            #self.walk_forward_slowly(client, d)
+            self.walk_forward_slowly(client, d)
             space['tospeak'] = "Slower. Obstacle coming nearer."
         else:
             self.mode = 'go'
-            client.Move(0.3, 0, 0)
-            time.sleep(3)
-            client.StopMove()
-            #self.walk_forward(client, d)
+            self.walk_forward(client, d)
             
         print(f"obstacle at {d:.2f} m => {self.mode}", flush=True)
         
