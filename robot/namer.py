@@ -16,11 +16,9 @@ class Namer(Agent):
         self.duck = None
 
     def senseSelectAct(self):
-        name = self.triggered()
-        if name == 'duck':
-            self.duck = space['duck']
-            print("There is a duck vector on our blackboard", flush=True)
-            return
+        duck = space['duck']
+        if duck is not self.duck:
+            self.duck = duck
         if self.duck is None:
             return
         features = space[self.name]
