@@ -43,9 +43,9 @@ class MirrorServiceAgent(Agent):
                 return
             try:
                 name, marshalled = line.split(None, 1)
-                print(f"robot server: received name={name!r}, len={len(marshalled)}", flush=True)
+                #print(f"robot server: received name={name!r}, len={len(marshalled)}", flush=True)
                 space[name] = demarshal(name, marshalled)
-                print(f"robot server: wrote space[{name!r}], is_none={space[name] is None}", flush=True)
+                #print(f"robot server: wrote space[{name!r}], is_none={space[name] is None}", flush=True)
             except Exception as e:
                 print(f"robot server: parse/demarshal failed: {e}", flush=True)
 

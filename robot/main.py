@@ -13,6 +13,6 @@ Perception('img','features')
 Namer('features')
 Speaker('tospeak')
 MirrorServerAgent(7777,['img','features'])
-while (True):
-    print(space['duck'])
-    time.sleep(1)
+# while (True):
+#     print(space['duck'])
+#     time.sleep(1)
