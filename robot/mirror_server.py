@@ -8,9 +8,9 @@ import numpy as np
 
 class MirrorServiceAgent(Agent):
 
-    def __init__(self,socket,name):
+    def __init__(self,socket,names):
         self.socket = socket
-        self.name = name
+        self.names = names
         self.buffer = ''
         super().__init__()
         
@@ -25,24 +25,30 @@ class MirrorServiceAgent(Agent):
         self.socket.send((line+'\r\n').encode())
         
     def init(self):
-        try:
-            print('starting mirroring on the port',self.name)
-            while not self.stopped:
-                name = self.getline()
-                if len(name) > 0:
-                    self.putline(marshal(name,space[name]))
-        except Exception as e:
-            print(e)
-            self.stop()
+        for name in self.names:
+            space.attach_trigger(name,self)
+        print('starting mirroring')
+        while not self.stopped:
+            try:
+                line = self.getline()
+            except Exception as e:
+                print(e)
+                self.stop()
+            try:
+                name, marshalled = line.split()
+                space[name] = demarshal(name,marshalled)
+            except Exception as e:
+                print(e)
 
     def senseSelectAct(self):
-        pass
+        name = self.triggered()
+        self.putline(name+" "+marshal(name,space[name]))
     
 class MirrorServerAgent(Agent):
 
-    def __init__(self,port,name):
+    def __init__(self,port,names):
         self.port = port
-        self.name = name
+        self.names = names
         super().__init__()
         
     def init(self):
@@ -56,7 +62,8 @@ class MirrorServerAgent(Agent):
             try:
                 sock.listen(1)
                 client, address = sock.accept()
-                MirrorServiceAgent(client,self.name)
+                print('connected')
+                MirrorServiceAgent(client,self.names)
             except:
                 pass
         try:

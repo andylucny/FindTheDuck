@@ -6,8 +6,7 @@ from agentspace import space
 
 ip = '10.195.88.72'
 #ip = 'localhost'
-MirrorClientAgent(ip,7777,'img')
-MirrorClientAgent(ip, 7778, 'features')
+MirrorClientAgent(ip,7777,[])
 Viewer('img')
 Snapshotter('img', 'features')
 CLI()

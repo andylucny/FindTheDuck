@@ -5,10 +5,11 @@ from demarshaller import demarshal
 
 class MirrorClientAgent(Agent):
 
-    def __init__(self,ip,port,name):
+    def __init__(self,ip,port,names):
         self.ip = ip
         self.port = port
-        self.name = name
+        self.names = names
+        self.buffer = ''
         super().__init__()
         
     def getline(self):
@@ -27,18 +28,22 @@ class MirrorClientAgent(Agent):
         try:
             self.sock.connect((self.ip,self.port))
         except ConnectionRefusedError:
-            print('router is not running')
+            print('the server is not running')
             self.stop()
-        self.buffer = ''
+        for name in self.names:
+            space.attach_trigger(name,self)
         while not self.stopped:
             try:
-                self.putline(self.name)
-                line = self.getline() 
-                space[self.name] = demarshal(self.name,line)
+                line = self.getline()
             except Exception as e:
                 print(e)
                 self.stop()
+            try:
+                name, marshalled = line.split()
+                space[name] = demarshal(name,marshalled)
+            except Exception as e:
+                print(e)
   
     def senseSelectAct(self):
-        pass
-        
+        name = self.triggered()
+        self.putline(name+" "+marshal(name,space[name]))
