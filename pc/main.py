@@ -10,7 +10,7 @@ import time
 
 ip = '10.195.88.72'
 #ip = 'localhost'
-MirrorClientAgent(ip,7777,[])
+MirrorClientAgent(ip,7777,['duck'])
 DuckProvider("objects/duck/features_00.npy")
 #Viewer('img')
 #Snapshotter('img', 'features')

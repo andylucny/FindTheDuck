@@ -39,7 +39,9 @@ class MirrorServiceAgent(Agent):
             self.stop()
         try:
             name, marshalled = line.split()
-            space[name] = demarshal(name,marshalled)
+            print(f"robot server: received name={name!r}, len={len(marshalled)}", flush=True)
+            space[name] = demarshal(name, marshalled)
+            print(f"robot server: wrote space[{name!r}], is_none={space[name] is None}", flush=True)
         except:
             pass
 
