@@ -1,8 +1,10 @@
+from agentspace import space
 from mirror_client import MirrorClientAgent 
 from viewer import Viewer
 from snapshotter import Snapshotter
+from joystickApi import JoystickAgent
+from joystickControl import JoystickControlAgent
 from cli import CLI
-from agentspace import space
 
 ip = '10.195.88.72'
 #ip = 'localhost'
@@ -11,6 +13,10 @@ Viewer('img')
 Snapshotter('img', 'features')
 CLI()
 
+time.sleep(1)
+
+JoystickAgent('joystick')
+JoystickControlAgent('joystick','forward','turn')
 
 
 # DEBUG
