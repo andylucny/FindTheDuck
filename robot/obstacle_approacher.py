@@ -71,15 +71,13 @@ class ObstacleApproacher(Agent):
             vx, vyaw = 0.0, 0.5
         elif d < SLOW_DISTANCE:
             new_mode = 'slow'
-            vx, vyaw = 0.2, 0.0
+            vx, vyaw = 0.4, 0.0
         else:
             new_mode = 'go'
             vx, vyaw = 0.4, 0.0
 
-        t_end = time.time() + TICK_SECONDS
-        while time.time() < t_end:
-            client.Move(vx, 0.0, vyaw)
-            time.sleep(0.02)
+        client.Move(vx, 0.0, vyaw)
+        time.sleep(0.02)
 
         if new_mode != self.mode:
             self.mode = new_mode
