@@ -2,8 +2,8 @@ from agentspace import space
 from mirror_client import MirrorClientAgent 
 from viewer import Viewer
 from snapshotter import Snapshotter
-from joystickApi import JoystickAgent
-from joystickControl import JoystickControlAgent
+# from joystickApi import JoystickAgent
+# from joystickControl import JoystickControlAgent
 from duck_provider import DuckProvider
 from cli import CLI
 import time
@@ -18,8 +18,8 @@ DuckProvider("objects/duck/features_00.npy")
 
 time.sleep(1)
 
-JoystickAgent('joystick')
-JoystickControlAgent('joystick','forward','turn')
+# JoystickAgent('joystick')
+# JoystickControlAgent('joystick','forward','turn')
 
 
 # DEBUG

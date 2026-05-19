@@ -15,4 +15,4 @@ Speaker('tospeak')
 MirrorServerAgent(7777,['img','features'])
 while (True):
     print(space['duck'])
-    time.sleep(100)
+    time.sleep(1)

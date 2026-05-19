@@ -31,6 +31,6 @@ def demarshal_array(encoded_str: str) -> np.ndarray:
 def demarshal(name, text_data):
     if 'rgb' in name or 'img' in name or 'image' in name:
         return demarshal_image(text_data)
-    elif 'features' or 'duck' in name:
+    elif 'features' in name or 'duck' in name:
         return demarshal_array(text_data)
     return None
