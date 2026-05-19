@@ -34,4 +34,6 @@ def marshal(name,data):
             return marshal_image(data)
         elif 'features' in name or 'duck' in name:
             return marshal_array(data)
+        else:
+            return str(data)
     return ""
