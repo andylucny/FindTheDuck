@@ -19,7 +19,7 @@ client.Init()
 
 class ObstacleApproacher(Agent): 
 
-    def __init__(self, pts_name='pts'):
+    def __init__(self, pts_name):
         self.name = pts_name
         self.mode = 'stop'
         super().__init__()
