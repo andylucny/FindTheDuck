@@ -2,25 +2,26 @@ from agentspace import space
 from mirror_client import MirrorClientAgent 
 from viewer import Viewer
 from snapshotter import Snapshotter
-from joystickApi import JoystickAgent
-from joystickControl import JoystickControlAgent
+# from joystickApi import JoystickAgent
+# from joystickControl import JoystickControlAgent
 from duck_provider import DuckProvider
-#from cli import CLI
+from cli import CLI
 import time
 
 ip = '10.195.88.72'
 #ip = 'localhost'
-MirrorClientAgent(ip,7777,['duck','forward','turn'])
+MirrorClientAgent(ip,7777,['duck'])
 time.sleep(1)
 DuckProvider("objects/duck/features_03.npy")
 Viewer('img')
 Snapshotter('img', 'features')
-#CLI()
+CLI()
 
 time.sleep(1)
 
-JoystickAgent('joystick')
-JoystickControlAgent('joystick','forward','turn')
+# JoystickAgent('joystick')
+# JoystickControlAgent('joystick','forward','turn')
+
 
 # DEBUG
 # import time

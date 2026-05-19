@@ -25,7 +25,8 @@ class Lidar(Agent):
     def init(self):
         sub = ChannelSubscriber("rt/utlidar/cloud_livox_mid360", PointCloud2_)
         sub.Init(self.on_cloud, 10)
-  
+
     def senseSelectAct(self):
         pass
 
+    

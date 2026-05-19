@@ -33,6 +33,4 @@ def demarshal(name, text_data):
         return demarshal_image(text_data)
     elif 'features' in name or 'duck' in name:
         return demarshal_array(text_data)
-    else:
-        return float(text_data)
     return None
