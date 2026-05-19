@@ -1,4 +1,4 @@
-from agentspace import Agent, space
+from agentspace import Agent, space, Trigger
 from marshaller import marshal
 import cv2
 import socket
@@ -26,19 +26,21 @@ class MirrorServiceAgent(Agent):
         
     def init(self):
         for name in self.names:
-            space.attach_trigger(name,self)
+            space.attach_trigger(name,self,Trigger.NAMES)
         print('starting mirroring')
-        while not self.stopped:
-            try:
-                line = self.getline()
-            except Exception as e:
-                print(e)
-                self.stop()
-            try:
-                name, marshalled = line.split()
-                space[name] = demarshal(name,marshalled)
-            except Exception as e:
-                print(e)
+        self.loopit = True
+        
+    def loop(self):
+        try:
+            line = self.getline()
+        except Exception as e:
+            print(e)
+            self.stop()
+        try:
+            name, marshalled = line.split()
+            space[name] = demarshal(name,marshalled)
+        except Exception as e:
+            print(e)
 
     def senseSelectAct(self):
         name = self.triggered()

@@ -1,6 +1,6 @@
 import socket
 import re
-from agentspace import Agent, space
+from agentspace import Agent, space, Trigger
 from demarshaller import demarshal
 
 class MirrorClientAgent(Agent):
@@ -31,18 +31,20 @@ class MirrorClientAgent(Agent):
             print('the server is not running')
             self.stop()
         for name in self.names:
-            space.attach_trigger(name,self)
-        while not self.stopped:
-            try:
-                line = self.getline()
-            except Exception as e:
-                print(e)
-                self.stop()
-            try:
-                name, marshalled = line.split()
-                space[name] = demarshal(name,marshalled)
-            except Exception as e:
-                print(e)
+            space.attach_trigger(name,self,Trigger.NAMES)
+        self.loopit = True
+            
+    def loop(self):
+        try:
+            line = self.getline()
+        except Exception as e:
+            print(e)
+            self.stop()
+        try:
+            name, marshalled = line.split()
+            space[name] = demarshal(name,marshalled)
+        except Exception as e:
+            print(e)
   
     def senseSelectAct(self):
         name = self.triggered()

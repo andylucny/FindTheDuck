@@ -107,6 +107,7 @@ class Agent:
 
     def __init__(self):
         self.stopped = False
+        self.loopit = False
         self.triggered_name = None
         self.timer = None
         self.proxies = Queue()
@@ -135,6 +136,11 @@ class Agent:
         
     def run(self):
         self.init()
+        
+        if self.loopit:
+            self.tl = threading.Thread(name="agent", target=self.looping)
+            self.tl.start()
+            
         while not self.stopped:
             self.receive()
             if self.stopped:
@@ -145,6 +151,13 @@ class Agent:
     def init(self): # to be overiden
         print('I am ready')
     
+    def loop(self): # to be overiden
+        pass
+        
+    def looping(self):
+        while not self.stopped:
+            self.loop()
+
     def senseSelectAct(self): # to be overiden
         print('I am alive')
         
