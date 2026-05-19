@@ -1,4 +1,4 @@
-from agentspace import Agent, space
+from agentspace import Agent, space, Trigger
 import cv2
 from dino import load_features
 import time
@@ -8,12 +8,12 @@ class Namer(Agent):
     def __init__(self,name):
         self.name = name
         self.threshold = 1900.0
-        super().__init__()
-        
+        super().__init__()  
+
     def init(self):
-        space.attach_trigger('duck', self)
-        space.attach_trigger(self.name, self)
-        self.duck = None
+        space.attach_trigger('duck', self, Trigger.NAMES)
+        space.attach_trigger(self.name, self, Trigger.NAMES)
+        self.duck = space['duck']   # in case already there
 
     def senseSelectAct(self):
         name = self.triggered()
