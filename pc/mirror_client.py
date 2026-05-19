@@ -37,15 +37,20 @@ class MirrorClientAgent(Agent):
     def loop(self):
         try:
             line = self.getline()
-        except Exception as e:
-            print(e)
+        except:
+            print('reception closed')
             self.stop()
         try:
             name, marshalled = line.split()
             space[name] = demarshal(name,marshalled)
-        except Exception as e:
-            print(e)
+        except:
+            pass
   
     def senseSelectAct(self):
         name = self.triggered()
-        self.putline(name+" "+marshal(name,space[name]))
+        try:
+            self.putline(name+" "+marshal(name,space[name]))
+        except:
+            print('transmission closed')
+            self.stop()
+
