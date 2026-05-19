@@ -2,6 +2,7 @@ from agentspace import Agent, space
 import numpy as np
 import time
 import math
+from collections import deque
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
 from unitree_sdk2py.g1.loco.g1_loco_client import LocoClient
 
@@ -17,11 +18,15 @@ client = LocoClient()
 client.SetTimeout(10.0)
 client.Init()
 
+WINDOW_SECONDS = 0.8        # rolling window length
+TICK_SECONDS   = 0.1        # how long each Move burst lasts
+
 class ObstacleApproacher(Agent): 
 
     def __init__(self, pts_name):
         self.name = pts_name
         self.mode = 'stop'
+        self.history = deque()
         super().__init__()
         
     def init(self):
@@ -40,21 +45,17 @@ class ObstacleApproacher(Agent):
             return float("inf")
         return float(np.linalg.norm(front[:, :2], axis=1).min())
     
-    def walk_forward(self, client, distance_m, speed=0.3):
-        duration = distance_m / speed
-        t_end = time.time() + duration
-        while time.time() < t_end:
-            client.Move(speed, 0, 0)
-            time.sleep(0.05)
-        client.StopMove()
-
-    def walk_forward_slowly(self, client, distance_m, speed=0.1):
-        duration = distance_m / speed
-        t_end = time.time() + duration
-        while time.time() < t_end:
-            client.Move(speed, 0, 0)
-            time.sleep(0.05)
-        client.StopMove()
+    def smoothed_distance(self, now, d):
+        """Append the new sample, drop expired ones, return the window mean."""
+        self.history.append((now, d))
+        cutoff = now - WINDOW_SECONDS
+        while self.history and self.history[0][0] < cutoff:
+            self.history.popleft()
+        # Ignore infinities so they don't poison the mean — clip them to a large
+        # finite value (slightly above SLOW_DISTANCE) so "nothing in cone" still
+        # counts as "clear".
+        vals = [min(v, 10.0) for _, v in self.history]
+        return sum(vals) / len(vals)
 
     def turn(self, client, angle_rad, rate=0.5):
         """Positive angle = counterclockwise (left turn)."""
@@ -70,18 +71,35 @@ class ObstacleApproacher(Agent):
         pts = space[self.name]
         if pts is None:
             return
-        d = self.front_distance(pts)
+
+        now = time.time()
+        d_raw = self.front_distance(pts)
+        d = self.smoothed_distance(now, d_raw)
+
         if d < STOP_DISTANCE:
-            self.mode = 'stop'
+            new_mode = 'stop'
             self.turn(client, math.pi)
-            space['tospeak'] = "Stop. Obstacle found."
+            time.sleep(5)
         elif d < SLOW_DISTANCE:
-            self.mode = 'slow'
-            self.walk_forward_slowly(client, d)
-            space['tospeak'] = "Slower. Obstacle coming nearer."
+            new_mode = 'slow'
+            vx, vyaw = 0.1, 0.0
         else:
-            self.mode = 'go'
-            self.walk_forward(client, d)
-            
-        print(f"obstacle at {d:.2f} m => {self.mode}", flush=True)
-        
+            new_mode = 'go'
+            vx, vyaw = 0.3, 0.0
+
+        t_end = time.time() + TICK_SECONDS
+        while time.time() < t_end:
+            client.Move(vx, 0.0, vyaw)
+            time.sleep(0.02)
+
+        if new_mode != self.mode:
+            self.mode = new_mode
+            if new_mode == 'stop':
+                space['tospeak'] = "Stop. Obstacle found."
+            elif new_mode == 'slow':
+                space['tospeak'] = "Slower. Obstacle coming nearer."
+            elif new_mode == 'go':
+                space['tospeak'] = "Path clear. Going."
+
+        print(f"raw={d_raw:.2f} avg={d:.2f} ({len(self.history)} samples) => {new_mode}",
+            flush=True)        
