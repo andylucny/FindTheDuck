@@ -32,6 +32,6 @@ def marshal(name,data):
     if isinstance(data,np.ndarray):
         if 'rgb' in name or 'img' in name or 'image' in name:
             return marshal_image(data)
-        elif 'features' in name:
+        elif 'features' or 'duck' in name:
             return marshal_array(data)
     return ""

@@ -2,6 +2,7 @@ import socket
 import re
 from agentspace import Agent, space, Trigger
 from demarshaller import demarshal
+from marshaller import marshal
 
 class MirrorClientAgent(Agent):
 

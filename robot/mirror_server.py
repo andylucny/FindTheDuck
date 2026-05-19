@@ -5,6 +5,7 @@ import socket
 import sys
 import re
 import numpy as np
+from demarshaller import demarshal
 
 class MirrorServiceAgent(Agent):
 
