@@ -57,16 +57,6 @@ class ObstacleApproacher(Agent):
         vals = [min(v, 10.0) for _, v in self.history]
         return sum(vals) / len(vals)
 
-    def turn(self, client, angle_rad, rate=0.5):
-        """Positive angle = counterclockwise (left turn)."""
-        direction = 1 if angle_rad >= 0 else -1
-        duration = abs(angle_rad) / rate
-        t_end = time.time() + duration
-        while time.time() < t_end:
-            client.Move(0, 0, direction * rate)
-            time.sleep(0.05)
-        client.StopMove()
-
     def senseSelectAct(self):
         pts = space[self.name]
         if pts is None:
@@ -78,14 +68,13 @@ class ObstacleApproacher(Agent):
 
         if d < STOP_DISTANCE:
             new_mode = 'stop'
-            self.turn(client, math.pi)
-            time.sleep(5)
+            vx, vyaw = 0.0, 0.5
         elif d < SLOW_DISTANCE:
             new_mode = 'slow'
-            vx, vyaw = 0.1, 0.0
+            vx, vyaw = 0.2, 0.0
         else:
             new_mode = 'go'
-            vx, vyaw = 0.3, 0.0
+            vx, vyaw = 0.4, 0.0
 
         t_end = time.time() + TICK_SECONDS
         while time.time() < t_end:
