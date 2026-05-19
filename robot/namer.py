@@ -24,6 +24,6 @@ class Namer(Agent):
         features = space[self.name]
         if features is not None:
             similarity = features @ self.duck
-            print(similarity, flush=True)
+            #print(similarity, flush=True)
             if similarity > self.threshold:
                 space['tospeak'] = "Ou, here is the duck!"
