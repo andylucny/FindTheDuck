@@ -18,7 +18,7 @@ SCAN_YAW = 0.3         # turn speed while searching
 APPROACH_VX = 0.5      # forward speed toward a candidate
 WIGGLE_YAW = 0.5       # turn speed during angle check
 INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
-WIGGLE_T = 2         # sec per wiggle half
+WIGGLE_T = 5         # sec per wiggle half
 LOST_GRACE = 5         # sec below LOCK before giving up
 
 client = LocoClient()
@@ -65,13 +65,13 @@ class DuckApproacher(Agent):
         if self.celebrated:
             return
         client.Move(0.0, 0.0, 0.0)
-        time.sleep(0.3)
-        try:
-            client.WaveHand(False)
-        except TypeError:
-            client.WaveHand()
-        except Exception as e:
-            print("wave failed:", e, flush=True)
+        time.sleep(0.2)
+        for _ in range(2):              # shimmy: left, right
+            client.Move(0.0, 0.0, 0.6)
+            time.sleep(0.4)
+            client.Move(0.0, 0.0, -0.6)
+            time.sleep(0.4)
+        client.Move(0.0, 0.0, 0.0)      # face front again, stop
         self.celebrated = True
 
     def search(self, sim, now):
@@ -169,7 +169,7 @@ class DuckApproacher(Agent):
                 space['tospeak'] = "Slower. Obstacle coming nearer."
             elif new_mode == 'go':
                 space['tospeak'] = "Path clear. Going."
-
-        print(f"raw={d_raw:.2f} avg={d:.2f} state={self.state} "
-              f"sim={sim:.3f}{' (MISSING)' if sim_missing else ''} => {new_mode}",
-              flush=True)
+        if self.state != "DONE":
+            print(f"raw={d_raw:.2f} avg={d:.2f} state={self.state} "
+                f"sim={sim:.3f}{' (MISSING)' if sim_missing else ''} => {new_mode}",
+                flush=True)
