@@ -18,7 +18,7 @@ SCAN_YAW = 0.3         # turn speed while searching
 APPROACH_VX = 0.5      # forward speed toward a candidate
 WIGGLE_YAW = 0.5       # turn speed during angle check
 INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
-WIGGLE_T = 2         # sec per wiggle half
+WIGGLE_T = 4         # sec per wiggle half
 LOST_GRACE = 5         # sec below LOCK before giving up
 
 client = LocoClient()
