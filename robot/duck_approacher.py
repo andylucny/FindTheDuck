@@ -14,12 +14,12 @@ CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0
 LOCK = 0.28            # could be a duck
 ACCEPT = 0.35          # confirmed duck
 
-SCAN_YAW = 0.5         # turn speed while searching
+SCAN_YAW = 0.15         # turn speed while searching
 APPROACH_VX = 0.2      # forward speed toward a candidate
 WIGGLE_YAW = 0.3       # turn speed during angle check
 INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
 WIGGLE_T = 1.2         # sec per wiggle half
-LOST_GRACE = 0.5       # sec below LOCK before giving up
+LOST_GRACE = 5         # sec below LOCK before giving up
 
 client = LocoClient()
 client.SetTimeout(10.0)
@@ -91,8 +91,7 @@ class DuckApproacher(Agent):
                 self.state_t0 = now
                 self.lost_t0 = None
                 return APPROACH_VX, 0.0
-            return 0.0, self.turn_dir * SCAN_YAW
-
+            return APPROACH_VX, self.turn_dir * SCAN_YAW
         if self.state == 'INVESTIGATE':
             if sim < LOCK:
                 if self.lost_t0 is None:
