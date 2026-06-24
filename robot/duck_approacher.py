@@ -74,6 +74,57 @@ class DuckApproacher(Agent):
             print("wave failed:", e, flush=True)
         self.celebrated = True
 
+    def search(self, sim, now):
+        """SCAN / INVESTIGATE / WIGGLE. Returns (vx, vyaw)."""
+        # confirmed from any state
+        if sim > ACCEPT:
+            self.found = True
+            self.state = 'DONE'
+            space['tospeak'] = "Ou, here is the duck!"
+            print("IT IS A DUCK!", flush=True)
+            self.wave()
+            return 0.0, 0.0
+
+        if self.state == 'SCAN':
+            if sim >= LOCK:
+                self.state = 'INVESTIGATE'
+                self.state_t0 = now
+                self.lost_t0 = None
+                return APPROACH_VX, 0.0
+            return 0.0, self.turn_dir * SCAN_YAW
+
+        if self.state == 'INVESTIGATE':
+            if sim < LOCK:
+                if self.lost_t0 is None:
+                    self.lost_t0 = now
+                if now - self.lost_t0 > LOST_GRACE:
+                    self.turn_dir = -self.turn_dir
+                    self.state = 'SCAN'
+                    self.lost_t0 = None
+                    return 0.0, self.turn_dir * SCAN_YAW
+                return APPROACH_VX, 0.0
+            self.lost_t0 = None
+            if now - self.state_t0 > INVESTIGATE_T:
+                self.state = 'WIGGLE'
+                self.wiggle_phase = 0
+                self.state_t0 = now
+                return 0.0, WIGGLE_YAW
+            return APPROACH_VX, 0.0
+
+        if self.state == 'WIGGLE':
+            if self.wiggle_phase == 0:
+                if now - self.state_t0 > WIGGLE_T:
+                    self.wiggle_phase = 1
+                    self.state_t0 = now
+                return 0.0, WIGGLE_YAW
+            else:
+                if now - self.state_t0 > WIGGLE_T:
+                    self.turn_dir = -self.turn_dir
+                    self.state = 'SCAN'
+                return 0.0, -WIGGLE_YAW
+
+        return 0.0, 0.0
+
     def senseSelectAct(self):
         pts = space[self.name]
         if pts is None:
@@ -87,110 +138,24 @@ class DuckApproacher(Agent):
         if sim is None:
             sim = 0.0
 
-        vx = 0.0
-        vyaw = 0.0
-
-        # confirmed earlier: stand still in front of the duck
+        # --- search runs every tick, whatever the distance ---
         if self.found:
-            new_mode = 'stop'
+            vx, vyaw = 0.0, 0.0
+        else:
+            vx, vyaw = self.search(sim, now)
 
-        # obstacle very close
-        elif d < STOP_DISTANCE:
+        # --- safety only clamps forward motion; turning is always allowed ---
+        if d < STOP_DISTANCE:
             new_mode = 'stop'
-            if sim > ACCEPT:
-                # the thing in front is the duck
-                self.found = True
-                self.state = 'DONE'
-                space['tospeak'] = "Ou, here is the duck!"
-                print("IT IS A DUCK!", flush=True)
-                self.wave()
-            elif sim >= LOCK:
-                # close to a candidate: wiggle to check angles, don't push in
-                if self.state != 'WIGGLE':
-                    self.state = 'WIGGLE'
-                    self.wiggle_phase = 0
-                    self.state_t0 = now
-                if self.wiggle_phase == 0:
-                    if now - self.state_t0 > WIGGLE_T:
-                        self.wiggle_phase = 1
-                        self.state_t0 = now
-                    vyaw = WIGGLE_YAW
-                else:
-                    if now - self.state_t0 > WIGGLE_T:
-                        self.turn_dir = -self.turn_dir
-                        self.state = 'SCAN'
-                    vyaw = -WIGGLE_YAW
-            else:
-                # not a duck: turn away
-                vyaw = 0.5
-
-        # obstacle getting near: keep hunting but slow
+            if vx > 0.0:
+                vx = 0.0                  # don't walk into the obstacle
+                if not self.found and sim < LOCK and self.state == 'SCAN':
+                    vyaw = self.turn_dir * SCAN_YAW   # nothing here, keep sweeping
         elif d < SLOW_DISTANCE:
             new_mode = 'slow'
-            if sim > ACCEPT:
-                self.found = True
-                self.state = 'DONE'
-                space['tospeak'] = "Ou, here is the duck!"
-                print("IT IS A DUCK!", flush=True)
-                self.wave()
-            elif sim >= LOCK:
-                vx = 0.2
-            else:
-                vyaw = self.turn_dir * SCAN_YAW
-
-        # path clear: full search state machine
+            vx = min(vx, 0.15)            # creep forward but keep searching
         else:
             new_mode = 'go'
-
-            if sim > ACCEPT:
-                self.found = True
-                self.state = 'DONE'
-                space['tospeak'] = "Ou, here is the duck!"
-                print("IT IS A DUCK!", flush=True)
-                self.wave()
-
-            elif self.state == 'SCAN':
-                if sim >= LOCK:
-                    self.state = 'INVESTIGATE'
-                    self.state_t0 = now
-                    self.lost_t0 = None
-                    vx = APPROACH_VX
-                else:
-                    vyaw = self.turn_dir * SCAN_YAW
-
-            elif self.state == 'INVESTIGATE':
-                if sim < LOCK:
-                    # candidate fading: short grace, then give up
-                    if self.lost_t0 is None:
-                        self.lost_t0 = now
-                    if now - self.lost_t0 > LOST_GRACE:
-                        self.turn_dir = -self.turn_dir
-                        self.state = 'SCAN'
-                        self.lost_t0 = None
-                    else:
-                        vx = APPROACH_VX
-                else:
-                    self.lost_t0 = None
-                    if now - self.state_t0 > INVESTIGATE_T:
-                        # driven long enough: check angles
-                        self.state = 'WIGGLE'
-                        self.wiggle_phase = 0
-                        self.state_t0 = now
-                    else:
-                        vx = APPROACH_VX
-
-            elif self.state == 'WIGGLE':
-                if self.wiggle_phase == 0:
-                    if now - self.state_t0 > WIGGLE_T:
-                        self.wiggle_phase = 1
-                        self.state_t0 = now
-                    vyaw = WIGGLE_YAW
-                else:
-                    if now - self.state_t0 > WIGGLE_T:
-                        # nothing found: turn the other way and rescan
-                        self.turn_dir = -self.turn_dir
-                        self.state = 'SCAN'
-                    vyaw = -WIGGLE_YAW
 
         client.Move(vx, 0.0, vyaw)
         time.sleep(0.02)
