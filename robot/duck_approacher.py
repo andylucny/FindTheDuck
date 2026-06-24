@@ -1,29 +1,31 @@
 from agentspace import Agent, space
 import numpy as np
 import time
-import math
 from collections import deque
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
 from unitree_sdk2py.g1.loco.g1_loco_client import LocoClient
 
-STOP_DISTANCE = 0.5    # meters - flip to STOP below this
-SLOW_DISTANCE = 1.5    # meters - flip to SLOW below this
+STOP_DISTANCE = 0.5
+SLOW_DISTANCE = 1.5
 CONE_X_MIN, CONE_X_MAX = 0.2, 3.0
 CONE_Y_HALF = 0.5
-CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0   # ignore floor + above-head
+CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0
 
-# Duck thresholds
-LOCK   = 0.28          # could be a duck in that direction
-ACCEPT = 0.35          # confirm it's the duck
+LOCK = 0.28            # could be a duck
+ACCEPT = 0.35          # confirmed duck
 
-# Movement
-# ChannelFactoryInitialize(0, 'eth0')   # or whatever your interface is
+SCAN_YAW = 0.5         # turn speed while searching
+APPROACH_VX = 0.2      # forward speed toward a candidate
+WIGGLE_YAW = 0.3       # turn speed during angle check
+INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
+WIGGLE_T = 1.2         # sec per wiggle half
+LOST_GRACE = 0.5       # sec below LOCK before giving up
+
 client = LocoClient()
 client.SetTimeout(10.0)
 client.Init()
 
-WINDOW_SECONDS = 0.8        # rolling window length
-TICK_SECONDS   = 0.1        # how long each Move burst lasts
+WINDOW_SECONDS = 0.8
 
 class DuckApproacher(Agent):
 
@@ -34,29 +36,24 @@ class DuckApproacher(Agent):
         super().__init__()
 
     def init(self):
-        self.max_distance = 1.0
         space.attach_trigger(self.name, self)
-        # search state
-        self.turn_dir = 1.0       # +1 / -1 sweep direction
-        self.last_sim = None
-        self.step = 0.5           # current yaw magnitude while hunting
+        self.state = 'SCAN'        # SCAN | INVESTIGATE | WIGGLE | DONE
+        self.turn_dir = 1.0
+        self.state_t0 = time.time()
+        self.wiggle_phase = 0      # 0 = left, 1 = right
+        self.lost_t0 = None
         self.found = False
-        self.celebrated = False   # wave-once latch
+        self.celebrated = False
 
     def front_distance(self, pts):
         x, y, z = pts[:, 0], pts[:, 1], pts[:, 2]
-        mask = (
-            (x > CONE_X_MIN) & (x < CONE_X_MAX) &
-            (np.abs(y) < CONE_Y_HALF) &
-            (z > CONE_Z_MIN) & (z < CONE_Z_MAX)
-        )
+        mask = (x > CONE_X_MIN) & (x < CONE_X_MAX) & (np.abs(y) < CONE_Y_HALF) & (z > CONE_Z_MIN) & (z < CONE_Z_MAX)
         front = pts[mask]
         if front.shape[0] == 0:
             return float("inf")
         return float(np.linalg.norm(front[:, :2], axis=1).min())
 
     def smoothed_distance(self, now, d):
-        """Append the new sample, drop expired ones, return the window mean."""
         self.history.append((now, d))
         cutoff = now - WINDOW_SECONDS
         while self.history and self.history[0][0] < cutoff:
@@ -64,47 +61,18 @@ class DuckApproacher(Agent):
         vals = [min(v, 10.0) for _, v in self.history]
         return sum(vals) / len(vals)
 
-    def celebrate(self):
-        """Stop dead, face the duck, wave once. Idempotent."""
+    def wave(self):
         if self.celebrated:
             return
-        client.Move(0.0, 0.0, 0.0)   # ensure stopped before gesturing
-        time.sleep(0.3)              # let the walk controller settle
+        client.Move(0.0, 0.0, 0.0)
+        time.sleep(0.3)
         try:
-            client.WaveHand(False)   # no-turn wave; drop the arg if your SDK takes none
+            client.WaveHand(False)
         except TypeError:
             client.WaveHand()
         except Exception as e:
             print("wave failed:", e, flush=True)
         self.celebrated = True
-
-    def search_yaw(self):
-        """Decide (vx, vyaw, done) from duck similarity."""
-        sim = space['duck_sim']
-        if sim is None or self.found:
-            return 0.0, 0.0, self.found
-
-        if sim > ACCEPT:                 # confirmed at this heading
-            self.found = True
-            space['tospeak'] = "Ou, here is the duck!"
-            print("IT IS A DUCK!", flush=True)
-            self.celebrate()
-            return 0.0, 0.0, True
-
-        if sim < LOCK:                   # nothing yet: sweep to scan
-            self.last_sim = sim
-            return 0.0, self.turn_dir * 0.5, False
-
-        # LOCK <= sim <= ACCEPT: center on it, then APPROACH
-        centered = self.last_sim is not None and abs(sim - self.last_sim) < 0.01
-        if self.last_sim is not None and sim < self.last_sim - 0.01:
-            self.turn_dir *= -1.0        # overshot the peak: reverse
-            self.step = max(0.1, self.step * 0.6)
-        self.last_sim = sim
-
-        if centered:
-            return 0.2, 0.0, False       # walk toward the duck, no turn
-        return 0.0, self.turn_dir * self.step, False   # still turning to center
 
     def senseSelectAct(self):
         pts = space[self.name]
@@ -116,35 +84,113 @@ class DuckApproacher(Agent):
         d = self.smoothed_distance(now, d_raw)
 
         sim = space['duck_sim']
-        sim = sim if sim is not None else 0.0
+        if sim is None:
+            sim = 0.0
 
-        if d < STOP_DISTANCE:
+        vx = 0.0
+        vyaw = 0.0
+
+        # confirmed earlier: stand still in front of the duck
+        if self.found:
             new_mode = 'stop'
-            if self.found:
-                # already confirmed - stand in front of the duck
-                vx, vyaw = 0.0, 0.0
-            elif sim > ACCEPT:
-                # the obstacle in front IS the duck -> confirm, stop, wave
+
+        # obstacle very close
+        elif d < STOP_DISTANCE:
+            new_mode = 'stop'
+            if sim > ACCEPT:
+                # the thing in front is the duck
                 self.found = True
+                self.state = 'DONE'
                 space['tospeak'] = "Ou, here is the duck!"
                 print("IT IS A DUCK!", flush=True)
-                self.celebrate()
-                vx, vyaw = 0.0, 0.0
+                self.wave()
             elif sim >= LOCK:
-                # duckish but not confirmed - don't turn away yet, edge in
-                _, vyaw, _ = self.search_yaw()
-                vx = 0.05
+                # close to a candidate: wiggle to check angles, don't push in
+                if self.state != 'WIGGLE':
+                    self.state = 'WIGGLE'
+                    self.wiggle_phase = 0
+                    self.state_t0 = now
+                if self.wiggle_phase == 0:
+                    if now - self.state_t0 > WIGGLE_T:
+                        self.wiggle_phase = 1
+                        self.state_t0 = now
+                    vyaw = WIGGLE_YAW
+                else:
+                    if now - self.state_t0 > WIGGLE_T:
+                        self.turn_dir = -self.turn_dir
+                        self.state = 'SCAN'
+                    vyaw = -WIGGLE_YAW
             else:
-                # genuinely not a duck - turn away
-                vx, vyaw = 0.0, 0.5
+                # not a duck: turn away
+                vyaw = 0.5
+
+        # obstacle getting near: keep hunting but slow
         elif d < SLOW_DISTANCE:
             new_mode = 'slow'
-            vx, vyaw = 0.4, 0.0
+            if sim > ACCEPT:
+                self.found = True
+                self.state = 'DONE'
+                space['tospeak'] = "Ou, here is the duck!"
+                print("IT IS A DUCK!", flush=True)
+                self.wave()
+            elif sim >= LOCK:
+                vx = 0.2
+            else:
+                vyaw = self.turn_dir * SCAN_YAW
+
+        # path clear: full search state machine
         else:
             new_mode = 'go'
-            vx, vyaw, done = self.search_yaw()
-            if done:
-                vx, vyaw = 0.0, 0.0
+
+            if sim > ACCEPT:
+                self.found = True
+                self.state = 'DONE'
+                space['tospeak'] = "Ou, here is the duck!"
+                print("IT IS A DUCK!", flush=True)
+                self.wave()
+
+            elif self.state == 'SCAN':
+                if sim >= LOCK:
+                    self.state = 'INVESTIGATE'
+                    self.state_t0 = now
+                    self.lost_t0 = None
+                    vx = APPROACH_VX
+                else:
+                    vyaw = self.turn_dir * SCAN_YAW
+
+            elif self.state == 'INVESTIGATE':
+                if sim < LOCK:
+                    # candidate fading: short grace, then give up
+                    if self.lost_t0 is None:
+                        self.lost_t0 = now
+                    if now - self.lost_t0 > LOST_GRACE:
+                        self.turn_dir = -self.turn_dir
+                        self.state = 'SCAN'
+                        self.lost_t0 = None
+                    else:
+                        vx = APPROACH_VX
+                else:
+                    self.lost_t0 = None
+                    if now - self.state_t0 > INVESTIGATE_T:
+                        # driven long enough: check angles
+                        self.state = 'WIGGLE'
+                        self.wiggle_phase = 0
+                        self.state_t0 = now
+                    else:
+                        vx = APPROACH_VX
+
+            elif self.state == 'WIGGLE':
+                if self.wiggle_phase == 0:
+                    if now - self.state_t0 > WIGGLE_T:
+                        self.wiggle_phase = 1
+                        self.state_t0 = now
+                    vyaw = WIGGLE_YAW
+                else:
+                    if now - self.state_t0 > WIGGLE_T:
+                        # nothing found: turn the other way and rescan
+                        self.turn_dir = -self.turn_dir
+                        self.state = 'SCAN'
+                    vyaw = -WIGGLE_YAW
 
         client.Move(vx, 0.0, vyaw)
         time.sleep(0.02)
@@ -158,5 +204,4 @@ class DuckApproacher(Agent):
             elif new_mode == 'go':
                 space['tospeak'] = "Path clear. Going."
 
-        print(f"raw={d_raw:.2f} avg={d:.2f} ({len(self.history)} samples) => {new_mode}",
-            flush=True)
+        print(f"raw={d_raw:.2f} avg={d:.2f} state={self.state} sim={sim:.3f} => {new_mode}", flush=True)
