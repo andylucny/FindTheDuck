@@ -4,6 +4,7 @@ import time
 from collections import deque
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
 from unitree_sdk2py.g1.loco.g1_loco_client import LocoClient
+import cv2
 
 STOP_DISTANCE = 0.6
 SLOW_DISTANCE = 1.5
@@ -68,7 +69,7 @@ class DuckApproacher(Agent):
         time.sleep(0.3)
         try:
             client.StandUp2Squat()
-            time.sleep(1.5)
+            time.sleep(5)
             client.Squat2StandUp()
             time.sleep(1.5)
         except Exception as e:
@@ -82,6 +83,9 @@ class DuckApproacher(Agent):
             self.found = True
             self.state = 'DONE'
             space['tospeak'] = "Ou, here is the duck!"
+            img = space['image']      # save image
+            if img is not None:
+                cv2.imwrite(f"duck_{time.strftime('%H%M%S')}.png", img)
             print("IT IS A DUCK!", flush=True)
             self.wave()
             return 0.0, 0.0
