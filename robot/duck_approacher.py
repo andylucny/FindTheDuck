@@ -15,7 +15,7 @@ LOCK = 0.28            # could be a duck
 ACCEPT = 0.35          # confirmed duck
 
 SCAN_YAW = 0.15         # turn speed while searching
-APPROACH_VX = 0.2      # forward speed toward a candidate
+APPROACH_VX = 0.3      # forward speed toward a candidate
 WIGGLE_YAW = 0.3       # turn speed during angle check
 INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
 WIGGLE_T = 1.2         # sec per wiggle half
