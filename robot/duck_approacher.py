@@ -5,7 +5,7 @@ from collections import deque
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
 from unitree_sdk2py.g1.loco.g1_loco_client import LocoClient
 
-STOP_DISTANCE = 0.8
+STOP_DISTANCE = 0.6
 SLOW_DISTANCE = 1.5
 CONE_X_MIN, CONE_X_MAX = 0.2, 3.0
 CONE_Y_HALF = 0.5
@@ -16,9 +16,9 @@ ACCEPT = 0.30          # confirmed duck
 
 SCAN_YAW = 0.3         # turn speed while searching
 APPROACH_VX = 0.5      # forward speed toward a candidate
-WIGGLE_YAW = 0.3       # turn speed during angle check
+WIGGLE_YAW = 0.5       # turn speed during angle check
 INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
-WIGGLE_T = 1.2         # sec per wiggle half
+WIGGLE_T = 2         # sec per wiggle half
 LOST_GRACE = 5         # sec below LOCK before giving up
 
 client = LocoClient()
