@@ -121,7 +121,7 @@ class DuckApproacher(Agent):
                 if now - self.state_t0 > WIGGLE_T:
                     self.turn_dir = -self.turn_dir
                     self.state = 'SCAN'
-                return 0.0, -WIGGLE_YAW
+                return 0.0, -WIGGLE_YAW - 0.3
 
         return 0.0, 0.0
 
