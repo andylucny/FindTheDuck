@@ -14,6 +14,7 @@ Perception('img','features')
 Namer('features')
 Speaker('tospeak')
 MirrorServerAgent(7777,['img','features'])
+time.sleep(1000)
 DuckApproacher('pts')
 # while (True):
 #     print(space['pts'])
