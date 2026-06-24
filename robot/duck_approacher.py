@@ -14,7 +14,7 @@ CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0
 LOCK = 0.28            # could be a duck
 ACCEPT = 0.35          # confirmed duck
 
-SCAN_YAW = 0.2         # turn speed while searching
+SCAN_YAW = 0.3         # turn speed while searching
 APPROACH_VX = 0.5      # forward speed toward a candidate
 WIGGLE_YAW = 0.3       # turn speed during angle check
 INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
