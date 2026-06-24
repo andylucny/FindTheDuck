@@ -13,14 +13,18 @@ class Namer(Agent):
         self.duck = None
 
     def senseSelectAct(self):
-        duck = space['duck']
-        if duck is not self.duck:
-            self.duck = duck
-        if self.duck is None:
-            return
-        features = space[self.name]
-        if features is None:
-            return
-        sim = float(features @ self.duck)
-        space['duck_sim'] = sim          # publish for the obstacle agent
-        print("sim", round(sim, 3), flush=True)
+            duck = space['duck']
+            features = space[self.name]
+
+            if duck is None or features is None:
+                space['duck_sim'] = None          
+                print("namer waiting: duck None?", duck is None,
+                    "feat None?", features is None, flush=True)
+                return
+
+            if duck is not self.duck:
+                self.duck = duck
+
+            sim = float(features @ self.duck)
+            space['duck_sim'] = sim
+            print("sim", round(sim, 3), flush=True)

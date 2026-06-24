@@ -134,8 +134,10 @@ class DuckApproacher(Agent):
         d = self.smoothed_distance(now, d_raw)
 
         sim = space['duck_sim']
-        if sim is None:
-            sim = 0.0
+        sim_missing = sim is None          # guard: no score published yet
+        if sim_missing:
+            sim = 0.0                      # treat as "nothing here", keep searching
+            
 
         if self.found:
             vx, vyaw = 0.0, 0.0
@@ -167,4 +169,6 @@ class DuckApproacher(Agent):
             elif new_mode == 'go':
                 space['tospeak'] = "Path clear. Going."
 
-        print(f"raw={d_raw:.2f} avg={d:.2f} state={self.state} sim={sim:.3f} => {new_mode}", flush=True)
+        print(f"raw={d_raw:.2f} avg={d:.2f} state={self.state} "
+              f"sim={sim:.3f}{' (MISSING)' if sim_missing else ''} => {new_mode}",
+              flush=True)
