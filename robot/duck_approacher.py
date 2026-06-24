@@ -14,7 +14,7 @@ CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0
 LOCK = 0.28            # could be a duck
 ACCEPT = 0.35          # confirmed duck
 
-SCAN_YAW = 0.3         # turn speed while searching
+SCAN_YAW = 0.2         # turn speed while searching
 APPROACH_VX = 0.5      # forward speed toward a candidate
 WIGGLE_YAW = 0.3       # turn speed during angle check
 INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
@@ -156,9 +156,10 @@ class DuckApproacher(Agent):
             vx = 0.3      
         else:
             new_mode = 'go'
+            vx = 0.5
 
         client.Move(vx, 0.0, vyaw)
-        time.sleep(0.1)
+        time.sleep(2)
 
         if new_mode != self.mode:
             self.mode = new_mode
