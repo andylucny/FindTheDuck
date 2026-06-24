@@ -63,28 +63,32 @@ class DuckApproacher(Agent):
         vals = [min(v, 10.0) for _, v in self.history]
         return sum(vals) / len(vals)
 
-    def search_yaw(self):                                  # NEW (whole method)
-        """Decide yaw from duck similarity. Returns (vx, vyaw, done)."""
-        sim = space['duck_sim']
-        if sim is None or self.found:
-            return 0.0, 0.0, self.found
+    def search_yaw(self):
+            """Decide (vx, vyaw, done) from duck similarity."""
+            sim = space['duck_sim']
+            if sim is None or self.found:
+                return 0.0, 0.0, self.found
 
-        if sim > ACCEPT:                 # confirmed at this heading
-            self.found = True
-            space['tospeak'] = "Ou, here is the duck!"
-            print("IT IS A DUCK!", flush=True)
-            return 0.0, 0.0, True
+            if sim > ACCEPT:                 # confirmed
+                self.found = True
+                space['tospeak'] = "Ou, here is the duck!"
+                print("IT IS A DUCK!", flush=True)
+                return 0.0, 0.0, True
 
-        if sim < LOCK:                   # nothing yet: sweep to scan
+            if sim < LOCK:                   # nothing: sweep in place
+                self.last_sim = sim
+                return 0.0, self.turn_dir * 0.5, False
+
+            # LOCK <= sim <= ACCEPT: center on it, then APPROACH
+            centered = self.last_sim is not None and abs(sim - self.last_sim) < 0.01
+            if self.last_sim is not None and sim < self.last_sim - 0.01:
+                self.turn_dir *= -1.0        # overshot the peak: reverse
+                self.step = max(0.1, self.step * 0.6)
             self.last_sim = sim
-            return 0.0, self.turn_dir * 0.5, False
 
-        # LOCK <= sim <= ACCEPT: hill-climb toward the peak
-        if self.last_sim is not None and sim < self.last_sim:
-            self.turn_dir *= -1.0        # overshot: reverse
-            self.step = max(0.1, self.step * 0.6)
-        self.last_sim = sim
-        return 0.0, self.turn_dir * self.step, False
+            if centered:
+                return 0.2, 0.0, False       # walk toward the duck, no turn
+            return 0.0, self.turn_dir * self.step, False   # still turning to center
 
     def senseSelectAct(self):
         pts = space[self.name]
