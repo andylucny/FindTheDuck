@@ -1,15 +1,12 @@
 from agentspace import Agent, space
-import cv2
-from dino import load_features
-import time
+import numpy as np
 
 class Namer(Agent):
-    
-    def __init__(self,name):
+
+    def __init__(self, name):
         self.name = name
-        self.threshold = 1900.0
         super().__init__()
-        
+
     def init(self):
         space.attach_trigger('duck', self)
         space.attach_trigger(self.name, self)
@@ -22,8 +19,8 @@ class Namer(Agent):
         if self.duck is None:
             return
         features = space[self.name]
-        if features is not None:
-            similarity = features @ self.duck
-            #print(similarity, flush=True)
-            if similarity > self.threshold:
-                space['tospeak'] = "Ou, here is the duck!"
+        if features is None:
+            return
+        sim = float(features @ self.duck)
+        space['duck_sim'] = sim          # publish for the obstacle agent
+        print("sim", round(sim, 3), flush=True)

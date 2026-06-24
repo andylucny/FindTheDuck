@@ -14,7 +14,7 @@ Perception('img','features')
 Namer('features')
 Speaker('tospeak')
 MirrorServerAgent(7777,['img','features'])
-ObstacleApproacher('pts')
+#ObstacleApproacher('pts')
 # while (True):
 #     print(space['pts'])
 #     time.sleep(1)

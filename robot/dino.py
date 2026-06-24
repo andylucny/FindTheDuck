@@ -26,9 +26,15 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 #net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 
 def dino(img):
-    blob = cv2.dnn.blobFromImage(img, scalefactor=1/255.0, size=(224,224))
-    net.setInput(blob)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    blob = cv2.dnn.blobFromImage(
+        img, scalefactor=1/255.0, size=(224, 224), swapRB=False)
+    mean = np.array([0.485, 0.456, 0.406]).reshape(1, 3, 1, 1)
+    std  = np.array([0.229, 0.224, 0.225]).reshape(1, 3, 1, 1)
+    blob = (blob - mean) / std
+    net.setInput(blob.astype(np.float32))
     features = net.forward()[0]
+    features = features / (np.linalg.norm(features) + 1e-8)  # normalization
     return features
 
 def save_features(features,name):
