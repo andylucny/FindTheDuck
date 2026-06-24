@@ -111,10 +111,10 @@ class DuckApproacher(Agent):
             elif sim >= LOCK:
                 # duckish but not confirmed don't turn away yet.
                 _, vyaw, _ = self.search_yaw()
-                vx = 0.0
+                vx = 0.05
             else:
                 # genuinely not a duck - turn away
-                vx, vyaw = 0.0, 0.25
+                vx, vyaw = 0.0, 0.5
         elif d < SLOW_DISTANCE:
             new_mode = 'slow'
             vx, vyaw = 0.4, 0.0
