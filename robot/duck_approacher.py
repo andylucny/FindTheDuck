@@ -6,7 +6,7 @@ from collections import deque
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
 from unitree_sdk2py.g1.loco.g1_loco_client import LocoClient
 
-STOP_DISTANCE = 0.2    # meters - flip to STOP below this
+STOP_DISTANCE = 0.25    # meters - flip to STOP below this
 SLOW_DISTANCE = 1.5    # meters - flip to SLOW below this
 CONE_X_MIN, CONE_X_MAX = 0.2, 3.0
 CONE_Y_HALF = 0.5
