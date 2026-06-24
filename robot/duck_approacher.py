@@ -5,7 +5,7 @@ from collections import deque
 from unitree_sdk2py.core.channel import ChannelFactoryInitialize
 from unitree_sdk2py.g1.loco.g1_loco_client import LocoClient
 
-STOP_DISTANCE = 0.5
+STOP_DISTANCE = 0.8
 SLOW_DISTANCE = 1.5
 CONE_X_MIN, CONE_X_MAX = 0.2, 3.0
 CONE_Y_HALF = 0.5
@@ -14,8 +14,8 @@ CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0
 LOCK = 0.28            # could be a duck
 ACCEPT = 0.35          # confirmed duck
 
-SCAN_YAW = 0.15         # turn speed while searching
-APPROACH_VX = 0.3      # forward speed toward a candidate
+SCAN_YAW = 0.3         # turn speed while searching
+APPROACH_VX = 0.5      # forward speed toward a candidate
 WIGGLE_YAW = 0.3       # turn speed during angle check
 INVESTIGATE_T = 4.0    # sec driving before forcing a wiggle
 WIGGLE_T = 1.2         # sec per wiggle half
@@ -91,7 +91,7 @@ class DuckApproacher(Agent):
                 self.state_t0 = now
                 self.lost_t0 = None
                 return APPROACH_VX, 0.0
-            return APPROACH_VX, self.turn_dir * SCAN_YAW
+            return APPROACH_VX, 0.0
         if self.state == 'INVESTIGATE':
             if sim < LOCK:
                 if self.lost_t0 is None:
@@ -137,7 +137,6 @@ class DuckApproacher(Agent):
         if sim is None:
             sim = 0.0
 
-        # --- search runs every tick, whatever the distance ---
         if self.found:
             vx, vyaw = 0.0, 0.0
         else:
@@ -152,12 +151,12 @@ class DuckApproacher(Agent):
                     vyaw = self.turn_dir * SCAN_YAW   # nothing here, keep sweeping
         elif d < SLOW_DISTANCE:
             new_mode = 'slow'
-            vx = min(vx, 0.15)            # creep forward but keep searching
+            vx = 0.3      
         else:
             new_mode = 'go'
 
         client.Move(vx, 0.0, vyaw)
-        time.sleep(0.02)
+        time.sleep(0.1)
 
         if new_mode != self.mode:
             self.mode = new_mode
