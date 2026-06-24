@@ -4,7 +4,7 @@ from perception import Perception
 from namer import Namer
 from speaker import Speaker
 from lidar import Lidar
-from robot.duck_approacher import DuckApproacher
+from duck_approacher import DuckApproacher
 from mirror_server import MirrorServerAgent
 import time
 
