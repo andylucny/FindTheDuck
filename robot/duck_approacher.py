@@ -68,8 +68,7 @@ class DuckApproacher(Agent):
         client.Move(0.0, 0.0, 0.0)
         time.sleep(0.3)
         try:
-            client.StandUp2Squat()
-            time.sleep(5)
+            time.sleep(1.5)
             client.Squat2StandUp()
             time.sleep(1.5)
         except Exception as e:
@@ -83,10 +82,11 @@ class DuckApproacher(Agent):
             self.found = True
             self.state = 'DONE'
             space['tospeak'] = "Ou, here is the duck!"
-            img = space['image']      # save image
+            img = space['img']      # save image
             if img is not None:
                 cv2.imwrite(f"duck_{time.strftime('%H%M%S')}.png", img)
             print("IT IS A DUCK!", flush=True)
+            time.sleep(1.5)
             self.wave()
             return 0.0, 0.0
 
