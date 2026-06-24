@@ -4,7 +4,7 @@ from perception import Perception
 from namer import Namer
 from speaker import Speaker
 from lidar import Lidar
-from obstacle_approacher import ObstacleApproacher
+from robot.duck_approacher import DuckApproacher
 from mirror_server import MirrorServerAgent
 import time
 
@@ -14,7 +14,7 @@ Perception('img','features')
 Namer('features')
 Speaker('tospeak')
 MirrorServerAgent(7777,['img','features'])
-#ObstacleApproacher('pts')
+DuckApproacher('pts')
 # while (True):
 #     print(space['pts'])
 #     time.sleep(1)

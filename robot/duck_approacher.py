@@ -12,9 +12,9 @@ CONE_X_MIN, CONE_X_MAX = 0.2, 3.0
 CONE_Y_HALF = 0.5
 CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0   # ignore floor + above-head
 
-# Duck thresholds                                          # NEW
-LOCK   = 0.30          # start steering toward it          # NEW
-ACCEPT = 0.32          # confirm it's the duck             # NEW
+# Duck thresholds                                          
+LOCK   = 0.28          # could be a duck in that direction         
+ACCEPT = 0.35          # confirm it's the duck         
 
 # Movement
 # ChannelFactoryInitialize(0, 'eth0')   # or whatever your interface is
@@ -25,7 +25,7 @@ client.Init()
 WINDOW_SECONDS = 0.8        # rolling window length
 TICK_SECONDS   = 0.1        # how long each Move burst lasts
 
-class ObstacleApproacher(Agent):
+class DuckApproacher(Agent):
 
     def __init__(self, pts_name):
         self.name = pts_name
