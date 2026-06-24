@@ -12,9 +12,9 @@ CONE_X_MIN, CONE_X_MAX = 0.2, 3.0
 CONE_Y_HALF = 0.5
 CONE_Z_MIN, CONE_Z_MAX = -0.5, 1.0   # ignore floor + above-head
 
-# Duck thresholds                                          
-LOCK   = 0.28          # could be a duck in that direction         
-ACCEPT = 0.35          # confirm it's the duck         
+# Duck thresholds
+LOCK   = 0.28          # could be a duck in that direction
+ACCEPT = 0.35          # confirm it's the duck
 
 # Movement
 # ChannelFactoryInitialize(0, 'eth0')   # or whatever your interface is
@@ -36,11 +36,12 @@ class DuckApproacher(Agent):
     def init(self):
         self.max_distance = 1.0
         space.attach_trigger(self.name, self)
-        # search state                                     # NEW
+        # search state
         self.turn_dir = 1.0       # +1 / -1 sweep direction
         self.last_sim = None
         self.step = 0.5           # current yaw magnitude while hunting
         self.found = False
+        self.celebrated = False   # wave-once latch
 
     def front_distance(self, pts):
         x, y, z = pts[:, 0], pts[:, 1], pts[:, 2]
@@ -63,32 +64,47 @@ class DuckApproacher(Agent):
         vals = [min(v, 10.0) for _, v in self.history]
         return sum(vals) / len(vals)
 
+    def celebrate(self):
+        """Stop dead, face the duck, wave once. Idempotent."""
+        if self.celebrated:
+            return
+        client.Move(0.0, 0.0, 0.0)   # ensure stopped before gesturing
+        time.sleep(0.3)              # let the walk controller settle
+        try:
+            client.WaveHand(False)   # no-turn wave; drop the arg if your SDK takes none
+        except TypeError:
+            client.WaveHand()
+        except Exception as e:
+            print("wave failed:", e, flush=True)
+        self.celebrated = True
+
     def search_yaw(self):
-            """Decide (vx, vyaw, done) from duck similarity."""
-            sim = space['duck_sim']
-            if sim is None or self.found:
-                return 0.0, 0.0, self.found
+        """Decide (vx, vyaw, done) from duck similarity."""
+        sim = space['duck_sim']
+        if sim is None or self.found:
+            return 0.0, 0.0, self.found
 
-            if sim > ACCEPT:                 # confirmed
-                self.found = True
-                space['tospeak'] = "Ou, here is the duck!"
-                print("IT IS A DUCK!", flush=True)
-                return 0.0, 0.0, True
+        if sim > ACCEPT:                 # confirmed at this heading
+            self.found = True
+            space['tospeak'] = "Ou, here is the duck!"
+            print("IT IS A DUCK!", flush=True)
+            self.celebrate()
+            return 0.0, 0.0, True
 
-            if sim < LOCK:                   # nothing: sweep in place
-                self.last_sim = sim
-                return 0.0, self.turn_dir * 0.5, False
-
-            # LOCK <= sim <= ACCEPT: center on it, then APPROACH
-            centered = self.last_sim is not None and abs(sim - self.last_sim) < 0.01
-            if self.last_sim is not None and sim < self.last_sim - 0.01:
-                self.turn_dir *= -1.0        # overshot the peak: reverse
-                self.step = max(0.1, self.step * 0.6)
+        if sim < LOCK:                   # nothing yet: sweep to scan
             self.last_sim = sim
+            return 0.0, self.turn_dir * 0.5, False
 
-            if centered:
-                return 0.2, 0.0, False       # walk toward the duck, no turn
-            return 0.0, self.turn_dir * self.step, False   # still turning to center
+        # LOCK <= sim <= ACCEPT: center on it, then APPROACH
+        centered = self.last_sim is not None and abs(sim - self.last_sim) < 0.01
+        if self.last_sim is not None and sim < self.last_sim - 0.01:
+            self.turn_dir *= -1.0        # overshot the peak: reverse
+            self.step = max(0.1, self.step * 0.6)
+        self.last_sim = sim
+
+        if centered:
+            return 0.2, 0.0, False       # walk toward the duck, no turn
+        return 0.0, self.turn_dir * self.step, False   # still turning to center
 
     def senseSelectAct(self):
         pts = space[self.name]
@@ -99,21 +115,23 @@ class DuckApproacher(Agent):
         d_raw = self.front_distance(pts)
         d = self.smoothed_distance(now, d_raw)
 
-        sim = space['duck_sim']                           
-        sim = sim if sim is not None else 0.0              
+        sim = space['duck_sim']
+        sim = sim if sim is not None else 0.0
 
         if d < STOP_DISTANCE:
             new_mode = 'stop'
-            if self.found:                                 
+            if self.found:
+                # already confirmed - stand in front of the duck
                 vx, vyaw = 0.0, 0.0
             elif sim > ACCEPT:
-                # the obstacle in front is the duck
+                # the obstacle in front IS the duck -> confirm, stop, wave
                 self.found = True
                 space['tospeak'] = "Ou, here is the duck!"
                 print("IT IS A DUCK!", flush=True)
+                self.celebrate()
                 vx, vyaw = 0.0, 0.0
             elif sim >= LOCK:
-                # duckish but not confirmed don't turn away yet.
+                # duckish but not confirmed - don't turn away yet, edge in
                 _, vyaw, _ = self.search_yaw()
                 vx = 0.05
             else:
@@ -124,7 +142,7 @@ class DuckApproacher(Agent):
             vx, vyaw = 0.4, 0.0
         else:
             new_mode = 'go'
-            vx, vyaw, done = self.search_yaw()             
+            vx, vyaw, done = self.search_yaw()
             if done:
                 vx, vyaw = 0.0, 0.0
 
